@@ -11,6 +11,7 @@ use App\Types;
 use App\Privacity;
 use App\Belong;
 use App\Asign;
+use App\Notas;
 use Image;
 use Illuminate\Http\Request;
 use \Firebase\JWT\JWT;
@@ -31,9 +32,11 @@ class EventsController extends Controller
         $array_id_group = $_POST['id_group'];
         $id_type = $_POST['id_type'];
         $image = $request->file('image');
+
         if (!empty($image)) {
             $filename = $image->getClientOriginalName();
             Image::make($image)->resize(400,400)->save(public_path('/uploads/' . $filename));
+
         }
 
 
@@ -64,11 +67,86 @@ class EventsController extends Controller
             }
 
             date_default_timezone_set('CET');
-            $eventDB->date = date('Y-m-d H:i:s');
+            $eventDB->date = date('Y-m-d');
 
 
+            if (!empty($image)) {
+                 $eventDB->image = $this->getGlobalPath($filename);
+            }
 
-            $eventDB->image = $this->getGlobalPath($filename);
+            $eventDB->id_user = $user->id;
+            $eventDB->save();
+            foreach ($array_id_group as $key => $idGroup) {
+
+                $groupDB = Groups::find($idGroup);
+                if (empty($groupDB)) {
+                    $eventDB->delete();
+                    return $this->createResponse(400, 'No existe el tipo de grupo indicado');
+                }
+                $asignDB = new Asign();
+                $asignDB->id_event = $eventDB->id;
+                $asignDB->id_group = $idGroup;
+                $asignDB->save();
+            }
+
+
+            return $this->createResponse(200, 'Evento creado', $eventDB);
+
+
+            
+        } catch (Exception $e) {
+            return $this->createResponse(500, $e->getMessage());
+        }
+    }
+    public function post_createAndroid(Request $request)
+    {
+        $headers = getallheaders();
+        $token = $headers['Authorization'];
+        $key = $this->key;
+        $userData = JWT::decode($token, $key, array('HS256'));
+        $id_user = $userData->id;
+        $user = Users::find($id_user);
+        $title = $_POST['title'];
+        $description = $_POST['description'];
+        $array_id_group = $_POST['id_group'];
+        $id_type = $_POST['id_type'];
+        $image = $_POST['image'];
+
+
+        if (empty($_POST['title']) || empty($_POST['description']) || empty($_POST['id_group']) || empty($_POST['id_type'])) {
+            return $this->createResponse(400, 'Todos los datos son obligatorios');
+        }
+        try {
+
+            $eventDB = new Events();
+            $eventDB->title = $title;
+            $eventDB->description = $description;
+
+            $typeDB = Types::find($id_type);
+            if (empty($typeDB)) {
+                return $this->createResponse(400, 'No existe el tipo de evento indicado');
+            }
+
+            $eventDB->id_type = $id_type;
+
+            if (!empty($_POST['lat'])) {
+                $eventDB->lat = $_POST['lat'];
+            }
+            if (!empty($_POST['lon'])) {
+                $eventDB->lon = $_POST['lon'];
+            }
+            if (!empty($_POST['url'])) {
+                $eventDB->url = $_POST['url'];
+            }
+
+            date_default_timezone_set('CET');
+            $eventDB->date = date('Y-m-d');
+
+
+            if (!empty($image)) {
+                 $eventDB->image = $image;
+            }
+
             $eventDB->id_user = $user->id;
             $eventDB->save();
             foreach ($array_id_group as $key => $idGroup) {
@@ -183,14 +261,11 @@ class EventsController extends Controller
 
         if (!isset($_GET['type'])) {
 
-           // return $this->createResponse(400, 'El parámetro type es obligatorio (0 -> todos, 1 -> eventos, 2 -> ofertas trabajo, 3 -> notificaciones, 4 -> noticias)');
-
         return $this->createResponse(400, 'El parámetro type es obligatorio (0 -> todos, 1 -> eventos, 2 -> ofertas trabajo, 3 -> notificaciones, 4 -> noticias)');
 
         }
         $type = $_GET['type'];
         if ($type == 0) {
-            // $events = Events::whereNotNull('id')->get();
             $events = Events::all();
             $eventTitles = [];
             $eventDescriptions = [];
@@ -198,11 +273,6 @@ class EventsController extends Controller
                 array_push($eventTitles, $event->title);
                 array_push($eventDescriptions, $event->description);
         }
-
-        //     return response()->json([
-        //         'eventos' => $eventTitles,9
-        //         'hola' => $eventDescriptions,
-        // ]);
         return $this->createResponse(200, 'Listado de eventos', $events);
 
         }
@@ -214,10 +284,6 @@ class EventsController extends Controller
                 array_push($eventTitles, $event->title);
                 array_push($eventDescriptions, $event->description);
         }
-        //     return response()->json([
-        //         'eventos' => $eventTitles,
-        //         'descripción' => $eventDescriptions,
-        // ]);
         return $this->createResponse(200, 'Eventos', $events);
         }
         if ($type == 2) {
@@ -228,10 +294,6 @@ class EventsController extends Controller
                 array_push($eventTitles, $event->title);
                 array_push($eventDescriptions, $event->description);
         }
-        //     return response()->json([
-        //         'eventos' => $eventTitles,
-        //         'descripción' => $eventDescriptions,
-        // ]);
         return $this->createResponse(200, 'Ofertas de trabajo', $events);
         }
         if ($type == 3) {
@@ -242,10 +304,6 @@ class EventsController extends Controller
                 array_push($eventTitles, $event->title);
                 array_push($eventDescriptions, $event->description);
         }
-        //     return response()->json([
-        //         'eventos' => $eventTitles,
-        //         'descripción' => $eventDescriptions,
-        // ]);
         return $this->createResponse(200, 'Notificaciones', $events);
         }
         if ($type == 4) {
@@ -256,16 +314,12 @@ class EventsController extends Controller
                 array_push($eventTitles, $event->title);
                 array_push($eventDescriptions, $event->description);
         }
-        //     return response()->json([
-        //         'eventos' => $eventTitles,
-        //         'descripción' => $eventDescriptions,
-        // ]);
                     return $this->createResponse(200, 'Eventos', $events);
         }
     } 
 
 
-        public function get_eventsPanel()
+    public function get_eventsPanel()
     {
         $headers = getallheaders();
         $token = $headers['Authorization'];
@@ -298,9 +352,50 @@ class EventsController extends Controller
             }
 
 
-            return $this->createResponse(200, 'Listado de eventos', ['event' => $eventObject]);
+        return $this->createResponse(200, 'Listado de eventos', ['event' => $eventObject]);
 
             }
+
+             if ($type == 1) {
+            $events = Events::where('id_type', 1)->get();
+            $eventTitles = [];
+            $eventDescriptions = [];
+            foreach ($events as $event) {
+                array_push($eventTitles, $event->title);
+                array_push($eventDescriptions, $event->description);
+        }
+        return $this->createResponse(200, 'Eventos', ['event' => $events]);
+        }
+        if ($type == 2) {
+            $events = Events::where('id_type', 2)->get();
+            $eventTitles = [];
+            $eventDescriptions = [];
+            foreach ($events as $event) {
+                array_push($eventTitles, $event->title);
+                array_push($eventDescriptions, $event->description);
+        }
+        return $this->createResponse(200, 'Ofertas de trabajo', ['event' => $events]);
+        }
+        if ($type == 3) {
+            $events = Events::where('id_type', 3)->get();
+            $eventTitles = [];
+            $eventDescriptions = [];
+            foreach ($events as $event) {
+                array_push($eventTitles, $event->title);
+                array_push($eventDescriptions, $event->description);
+        }
+        return $this->createResponse(200, 'Notificaciones', ['event' => $events]);
+        }
+        if ($type == 4) {
+            $events = Events::where('id_type', 4)->get();
+            $eventTitles = [];
+            $eventDescriptions = [];
+            foreach ($events as $event) {
+                array_push($eventTitles, $event->title);
+                array_push($eventDescriptions, $event->description);
+        }
+                    return $this->createResponse(200, 'Eventos', ['event' => $events]);
+        }
 
         } 
 
@@ -343,7 +438,9 @@ class EventsController extends Controller
         // ]);
         // $commentsReverse = array_reverse($arrayComments);
 
-        return $this->createResponse(200, 'Evento y comentarios', array('event' => $event, 'comments' => Controller::reindex(array_reverse($commentsBD))));
+
+        return $this->createResponse(200, 'Evento y comentarios', array('comments' => Controller::reindex(array_reverse($commentsBD))));
+
             
         } catch (Exception $e) {
             
@@ -353,7 +450,71 @@ class EventsController extends Controller
 
 
     
-    public function  get_find()
+    public function  get_findAndroid()
+    {
+        $headers = getallheaders();
+        $token = $headers['Authorization'];
+        $key = $this->key;
+        $userData = JWT::decode($token, $key, array('HS256'));
+        $id = Users::where('email', $userData->email)->first()->id;
+        if (empty($_GET['search'])) 
+        {
+          return $this->createResponse(400, 'Falta parámetro obligatorio HOLA JEFF (search)');
+        }
+        $search = $_GET['search'];
+        $search = '%'.$search.'%';
+        if (!isset($_GET['type']) )
+        {
+          return $this->createResponse(400, 'Faltan parámetros obligatorios (type, 0 -> todos, 1-> eventos, 2-> ofertas trabajo, 3 -> notificaciones, 4 -> noticias)');
+        }
+
+        $type = $_GET['type'];
+
+        if ($type == 0) {
+            $events = Events::where('title', 'like', $search)->get();
+            if (count($events) == 0)
+            {
+                return $this->createResponse(400, 'No existen eventos');
+            }
+            $eventTitles = [];
+            $eventDescriptions = [];
+            foreach ($events as $event) {
+                array_push($eventTitles, $event->title);
+                array_push($eventDescriptions, $event->description);
+            }
+
+            return $this->createResponse(200, 'Evento', ['event' => $events]);
+        }
+        else
+        {
+            $typeDB = Types::find($type);
+                if ($typeDB == null) {
+                    return $this->createResponse(400, 'Parametro type no valido');
+                }
+                $events = Events::where('title', 'like', $search)
+                                ->where('id_type', $type)
+                                ->get();
+                if (count($events) == 0)
+                {
+                    return $this->createResponse(400, 'No existen eventos');
+                }
+                $eventTitles = [];
+                $eventDescriptions = [];
+                foreach ($events as $event) {
+                    array_push($eventTitles, $event->title);
+                    array_push($eventDescriptions, $event->description);
+            }
+                // return response()->json([
+                //     'eventos' => $eventTitles,
+                //     'descripción' => $eventDescriptions,
+                // ]);
+                return $this->createResponse(200, 'Evento', ['event' => $events]);
+        }
+    }
+
+
+
+        public function  get_find()
     {
         $headers = getallheaders();
         $token = $headers['Authorization'];
@@ -496,27 +657,58 @@ class EventsController extends Controller
     }
 
 
-public function curl_calendar()
+    public function get_commentsAndroid()
     {
-        $data = "{}";
-        $curl = curl_init();
-        curl_setopt_array($curl, array(
-        CURLOPT_URL => "https://script.google.com/macros/s/AKfycbw5ZFBZPJTSfldVIICOdY_K5YhsKEhPSN-H_Hm8x8M8JzARYkbm/exec",
-        CURLOPT_POST => 1,
-        CURLOPT_POSTFIELDS => $data,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_RETURNTRANSFER => true,
-        ));
+        $headers = getallheaders();
+        $token = $headers['Authorization'];
+        $key = $this->key;
+        $userData = JWT::decode($token, $key, array('HS256'));
 
+        if (empty($_GET['id_event'])) 
+        {
+          return $this->createResponse(400, 'Falta parámetros obligatorios (id_event) ');
+        }
+        $id_event= $_GET['id_event'];
 
-        $response = curl_exec($curl);
-        $err = curl_error($curl);
-        curl_close($curl);
-        $decode = json_decode($response, true);
-        
+        try {
+            $eventDB = Events::find($id_event);
+            if (empty($eventDB)) {
+                return $this->createResponse(400, "No existe el evento");
+            }
 
-        return $this->createResponse(200, 'Calendario', $decode['calendario']);
-    } 
+            $commentsDB = Comments::where('id_event', $id_event)
+                                    ->get();
+            if (count($commentsDB) == 0) {
+                return $this->createResponse(400, "No existen comentarios");
+            }
+
+            return $this->createResponse(200, "Listado de comentarios", ['comments' => $commentsDB]);
+        } catch (Exception $e) {
+            
+        }
+    }
+
+// public function curl_calendar()
+//     {
+//         $data = [ 'EMAIL' = 'juanpruebas@cev.com'];       
+//         $curl = curl_init();
+//         curl_setopt_array($curl, array(
+//         CURLOPT_URL => "https://script.google.com/macros/s/AKfycbw5ZFBZPJTSfldVIICOdY_K5YhsKEhPSN-H_Hm8x8M8JzARYkbm/exec",
+//         CURLOPT_POST => 1,
+//         CURLOPT_POSTFIELDS => $data,
+//         CURLOPT_FOLLOWLOCATION => true,
+//         CURLOPT_RETURNTRANSFER => true,
+//         ));
+
+//         var_dump(urlencode($data));exit;
+//         $response = curl_exec($curl);
+//         $err = curl_error($curl);
+//         curl_close($curl);
+//         $decode = json_decode($response, true);
+//         var_dump($decode);exit;
+
+//         return $this->createResponse(200, 'Calendario', $decode['calendario']);
+//     } 
 
 }
 

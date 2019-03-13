@@ -24,7 +24,7 @@ class CommentsController extends Controller
         $userData = JWT::decode($token, $key, array('HS256'));
         $id_user = $userData->id;
         $user = Users::find($id_user);
-        if ($user->id !== 1) {
+        if ($user->id_rol !== 1) {
             return $this->createResponse(401, 'No tienes permiso');
         }
         $title = $_POST['title'];

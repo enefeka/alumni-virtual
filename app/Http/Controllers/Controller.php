@@ -68,7 +68,7 @@ class Controller extends BaseController
     }
 
     protected function getGlobalPath($image){
-        return "http://localhost:8888/ProyectoAlumni/public/uploads/" . $image;
+        return "http://192.168.1.34:8888/ProyectoAlumni/public/uploads/" . $image;
     }
 
     function createResponse($code, $message, $data = [])

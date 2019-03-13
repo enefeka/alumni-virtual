@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use \Firebase\JWT\JWT;
 use Illuminate\Support\Facades\Mail;
 use Image;
+use App\Groups;
+use App\Belong;
 
 class UsersController extends Controller
 {
@@ -203,11 +205,12 @@ class UsersController extends Controller
             if ($userBD == null) {
                 return $this->createResponse(400, 'El usuario no existe');
             }
-            $image = $request->file('image');
+            $photo = $request->file('photo');
 
-            if (!empty($image)) {
-                $filename = $image->getClientOriginalName();
-                Image::make($image)->resize(400,400)->save(public_path('/uploads/' . $filename));
+            
+            if (!empty($photo)) {
+                $filename = $photo->getClientOriginalName();
+                Image::make($photo)->resize(400,400)->save(public_path('/uploads/' . $filename));
                 $userBD->photo = $this->getGlobalPath($filename);
             }
 
@@ -253,7 +256,7 @@ class UsersController extends Controller
             }
 
             $userBD->save();
-            return $this->createResponse(200, 'Usuario actualizado');
+            return $this->createResponse(200, 'Usuario actualizado', $userBD);
 
             
         } catch (Exception $e) {
@@ -641,8 +644,9 @@ public function post_insertUser()
         $userId = $userData->id;
 
         $friends = Friend::where('state', 2)
+                    ->where('id_user_receive', $userId)
+                    ->orWhere('state',2)
                     ->where('id_user_send', $userId)
-                    ->orWhere('id_user_receive', $userId)
                     ->get();
 
         $friendIds = [];
@@ -717,8 +721,8 @@ public function post_insertUser()
 
             $privacity = Privacity::find($userDB->id_privacity);
 
-            $friend = Friend::where('id_user_send', $id)
-                        ->where('id_user_receive', $id_user)    
+            $friend = Friend::where('id_user_receive', $id)
+                        ->where('id_user_send', $id_user)    
                         ->orWhere(function ($query) use($id_user, $id) {
                              $query->where('id_user_send', $id)
                                    ->where('id_user_receive', $id_user);

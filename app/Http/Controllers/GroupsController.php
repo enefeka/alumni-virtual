@@ -222,9 +222,80 @@ class GroupsController extends Controller
 
     public function get_groupsByUser()
     {
-
+       $headers = getallheaders();
+       $token = $headers['Authorization'];
+       $key = $this->key;
+      $userData = JWT::decode($token, $key, array('HS256'));
     }
+    // function get_groupsbyuser()
+    // {
 
+    //     // falta token
+    //     if (!isset(apache_request_headers()['Authorization']))
+    //     {
+    //         return $this->createResponse(400, 'Token no encontrado');
+    //     }
+
+    //     $jwt = apache_request_headers()['Authorization'];
+
+    //     // validar token
+    //     try {
+
+    //         $this->validateToken($jwt);
+    //     } catch (Exception $e) {
+
+    //         return $this->createResponse(400, 'Error de autentificacion');
+    //     }
+
+    //     $user = $this->decodeToken();
+
+    //     $id_user = $user->data->id;
+
+    //     $belongs = Model_Belong::find('all',array(
+    //             'where'=>array(
+    //                 array('id_user',$id_user),
+    //             ),
+    //         ));
+
+    //     if($belongs == null){
+    //         return $this->createResponse(400, 'El usuario no pertenece a ningún grupo');
+    //     }
+
+    //     foreach ($belongs as $key => $belong) {
+    //         $group = Model_Groups::find($belong->id_group);
+    //         $groups[] = $group;
+    //     }
+
+    //     foreach ($groups as $key => $group) {
+    //         $belongsGroup = Model_Belong::find('all',array(
+    //             'where'=>array(
+    //                 array('id_group',$group->id),
+    //             ),
+    //         ));
+
+    //         foreach ($belongsGroup as $key => $belongGroup) {
+    //              $userGroup = Model_Users::find('first',array(
+    //             'where'=>array(
+    //                 array('id',$belongGroup->id_user),
+    //                 array('is_registered', 1)
+    //             ),
+    //             ));
+
+    //             if($userGroup != null){
+    //                 $usersGroup[] = $userGroup;
+    //             }
+
+    //         }
+
+    //         $group['users'] = $usersGroup;
+
+    //         $usersGroup = [];
+    //     }
+        
+
+    //     $this->createResponse(200, 'Grupos a los que pertenece devueltos', array('groups' => Arr::reindex($groups)));
+
+    // }
     public function get_usersFromGroup()
     {
         $headers = getallheaders();
@@ -266,9 +337,9 @@ class GroupsController extends Controller
         $userData = JWT::decode($token, $key, array('HS256'));
         $id_user = $userData->id;
         $user = Users::find($id_user);
-        if ($user->id !== 1) {
-            return $this->error(401, 'No tienes permiso');
-        }
+        // if ($user->id !== 1) {
+        //     return $this->error(401, 'No tienes permiso');
+        // }
         
         $id_user = $_GET['id_user'];
 
@@ -278,17 +349,7 @@ class GroupsController extends Controller
         $arrBelongs = (array)$belongs;
         $isBelongsEmpty = array_filter($arrBelongs);
 
-        // $belongs = Belong::find('all',array(
-        //         'where'=>array(
-        //             array('id_user',$id_user),
-        //         ),
-        //     ));
-        // return $this->createResponse(200, 'holi', $belongs);exit;
-        // // $belongs = Belong::find(['id_user', $id_user]);
-        // // $belongs = Belong::whereIn('id_user', [1])->get();
-        // return $this->createResponse(400, 'El usuario no pertenece a ningun grupo', $belongs);
-
-
+    
         if (empty($isBelongsEmpty)) {
                  return $this->createResponse(400, 'El usuario no pertenece a ningun grupo');
              }
@@ -297,15 +358,12 @@ class GroupsController extends Controller
                 $group = Groups::find($belong->id_group);
                 $groups[] = $group;
              }
-             // var_dump($group);
         foreach ($groups as $key => $group) {
                 $belongsGroup = Belong::where('id_group', $group->id)->get();
              } 
-             // var_dump($belongsGroup);
         foreach ($belongsGroup as $key => $belongGroup) {
-                $userGroup = Users::where('id', $belongGroup->id_user)->first();
+                $userGroup = Users::where('id', $belongGroup->id_user)->get();
         }
-            // var_dump($userGroup);
 
         if ($userGroup != null) {
             $usersGroup[] = $userGroup;

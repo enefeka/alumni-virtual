@@ -18,6 +18,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 });
 
 Route::apiResource('users', 'UsersController');
+Route::apiResource('notas', 'NotasController');
 
 Route::post('register', 'UsersController@post_create');
 Route::post('login', 'UsersController@post_login');
@@ -57,6 +58,9 @@ Route::get('listcomments', 'EventsController@get_comments');
 Route::get('eventsandroid', 'EventsController@get_eventsAndroid');
 Route::get('calendar', 'EventsController@curl_calendar');
 Route::get('allevents', 'EventsController@get_eventsPanel');
+Route::get('commentsandroid', 'EventsController@get_commentsAndroid');
+Route::get('searcheventandroid', 'EventsController@get_findAndroid');
+Route::post('createeventandroid', 'EventsController@post_createAndroid');
 
 Route::post('createcomment', 'CommentsController@post_create');
 Route::post('deletecomment', 'CommentsController@post_delete');
@@ -66,3 +70,5 @@ Route::post('sendmessage', 'ChatsController@post_sendMessage');
 Route::get('messages', 'ChatsController@get_messages');
 Route::get('chats', 'ChatsController@get_chats');
 Route::get('userstochat', 'ChatsController@get_UsersToChat');
+
+
