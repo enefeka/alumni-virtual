@@ -688,6 +688,58 @@ class EventsController extends Controller
         }
     }
 
+
+    public function post_createPrueba(Request $request)
+    {
+        $image = $request->file('image');
+
+        $array_id_group = [1];
+                if (!empty($image)) {
+            $filename = $image->getClientOriginalName();
+            Image::make($image)->resize(400,400)->save(public_path('/uploads/' . $filename));
+
+        }
+
+        try {
+
+            $eventDB = new Events();
+            $eventDB->title = "Evento presentación";
+            $eventDB->description = "Hola";
+
+            $eventDB->id_type = 1;
+
+            date_default_timezone_set('CET');
+            $eventDB->date = date('Y-m-d');
+
+
+            if (!empty($image)) {
+                 $eventDB->image = $this->getGlobalPath($filename);
+            }
+            $eventDB->id_user = 1;
+            $eventDB->save();
+            foreach ($array_id_group as $key => $idGroup) {
+
+                $groupDB = Groups::find($idGroup);
+                if (empty($groupDB)) {
+                    $eventDB->delete();
+                    return $this->createResponse(400, 'No existe el tipo de grupo indicado');
+                }
+                $asignDB = new Asign();
+                $asignDB->id_event = $eventDB->id;
+                $asignDB->id_group = $idGroup;
+                $asignDB->save();
+            }
+
+
+            return $this->createResponse(200, 'Evento creado', $eventDB);
+
+
+            
+        } catch (Exception $e) {
+            return $this->createResponse(500, $e->getMessage());
+        }
+    }
+
 // public function curl_calendar()
 //     {
 //         $data = [ 'EMAIL' = 'juanpruebas@cev.com'];       

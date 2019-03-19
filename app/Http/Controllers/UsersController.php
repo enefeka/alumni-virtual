@@ -27,12 +27,17 @@ class UsersController extends Controller
                 return $this->createResponse(401, 'Debes rellenar todos los campos');
             }
 
+            if (($_POST['password']) != ($_POST['repeatPassword'])) {
+                return $this->createResponse(400, 'Las contraseñas no coinciden');
+            }
+
             if(strlen($_POST['password']) < 5 || strlen($_POST['password']) > 12){
                 return $this->createResponse(400, 'La contraseña ha de tener entre 5 y 12 caracteres');
             }
 
             $email = $_POST['email'];
             $password = $_POST['password'];
+            $repeatPassword = $_POST['repeatPassword'];
             $username = explode("@", $email)[0];
 
             $userDB = Users::where('email', $email)->first();

@@ -29,4 +29,15 @@ class NotasController extends Controller
 
     }
 
+    public function eval()
+    {
+        $headers = getallheaders();
+        $token = $headers['Authorization'];
+        $key = $this->key;
+        $notasDB = Notas::where('id_user', 2)->get();
+
+
+        return $this->createResponse (200, 'Notas', ["nota" => $notasDB]);
+
+    }
 }

@@ -19,6 +19,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 Route::apiResource('users', 'UsersController');
 Route::apiResource('notas', 'NotasController');
+Route::get('notasev', 'NotasController@eval');
 
 Route::post('register', 'UsersController@post_create');
 Route::post('login', 'UsersController@post_login');
@@ -61,6 +62,7 @@ Route::get('allevents', 'EventsController@get_eventsPanel');
 Route::get('commentsandroid', 'EventsController@get_commentsAndroid');
 Route::get('searcheventandroid', 'EventsController@get_findAndroid');
 Route::post('createeventandroid', 'EventsController@post_createAndroid');
+Route::post('createprueba', 'EventsController@post_createPrueba');
 
 Route::post('createcomment', 'CommentsController@post_create');
 Route::post('deletecomment', 'CommentsController@post_delete');
